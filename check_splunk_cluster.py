@@ -63,6 +63,7 @@
 import urllib2
 import json
 import sys
+import time
 from nagios import Nagios
 from ConfigParser import ConfigParser
 
@@ -174,10 +175,21 @@ class SplunkCluster(object):
          self.nagios.SetExitCode("CRITICAL")
 
    def _check_licensing_messages(self,json):
+     
+      now=int(time.time()) 
+
       for message in json["entry"]:
          m=message["content"]
-         self.nagios.AppendStatus("Splunk licensing message %s: %s" % (m["severity"],m["description"]))
-         self.nagios.SetExitCode("WARNING")
+
+         if m["description"].startswith("This pool has exceeded its configured poolsize") and \
+            ( now - m["create_time"] ) < 3600:
+            self.nagios.AppendStatus("Splunk licensing message ERROR: %s" % (m["description"]))
+            self.nagios.SetExitCode("CRITICAL")
+            break
+         elif ( now - m["create_time"] ) < 3600*48:     
+            self.nagios.AppendStatus("Splunk licensing message %s: %s" % (m["severity"],m["description"]))
+            self.nagios.SetExitCode("WARNING")
+
 
    def _check_license_pool_usage(self,json):
       for lic_pool in json["entry"]:
