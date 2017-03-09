@@ -13,6 +13,7 @@ Features
 * Checks if cluster search and replication factor are met
 * Checks is all peers (indexers) are up
 * Check license usage and alert on license violations
+* Optionally specifiy a list of checks to be run (if not: all checks are performed)
 
 Supports
 ========
@@ -59,3 +60,11 @@ Adding the check to Nagios
 ```
 * Restart your Nagios server and validate if the new check is working for you!
 
+Alternative with selected checks
+================================
+
+If you want to have the different performed as single check rather than have all tests in one Nagios check,
+you can specify a comma-separated list of checks as second argument. Example call:
+python check_splunk_cluster.py check.cfg cluster/master/info,licenser/pools
+
+This will perform only the check cluster/master/into and licenser/pools

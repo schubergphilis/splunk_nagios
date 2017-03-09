@@ -89,7 +89,7 @@ class SplunkCluster(object):
             "_check_peer_status",
             "_get_pending_job_count"
          ]
-      },
+         },
       {
          "end_point" : "cluster/master/generation",
          "checks" : [
@@ -120,11 +120,21 @@ class SplunkCluster(object):
       self.nagios = nagios
 
    def _load_json(self,endpoint):
-      return json.loads(self.http_client.open(self.baseurl+endpoint+"?output_mode=json").read())
+      url = self.baseurl+endpoint
+      try:
+          jsonResult = json.loads(self.http_client.open(url+"?output_mode=json").read())
+      except:
+          self.nagios.AppendStatus("Could not connect  %s " %(url)) 
+          self.nagios.SetExitCode("UNKNOWN")
+          self.nagios.BuildResponseAndExit()
+      return jsonResult
 
-   def run_checks(self):
+   def run_checks(self, checkList=None):
       for checker in self.endpoints:
+         if not (checkList is None or checker["end_point"] in checkList):
+              continue
          json = self._load_json(checker["end_point"])
+         #print json
          for check in checker["checks"]:
             self.__getattribute__(check)(json)
 
@@ -225,6 +235,12 @@ if __name__ == "__main__":
 
    nag.SetStatus("")
    nag.SetExitCode("OK")
-   splunk.run_checks()
+
+   # if we have second argument, take this as comma separated list of endpoints to check
+   if len (sys.argv) > 2:
+       endpoint_list = sys.argv[2].split(',')
+       splunk.run_checks(endpoint_list)
+   else:
+       splunk.run_checks()
     
    nag.BuildResponseAndExit()
